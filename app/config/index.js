@@ -2,5 +2,6 @@
 var db = require('./db');
 
 exports = module.exports = {
-    db: db
+    db: db,
+    key: 'quiz'
 }

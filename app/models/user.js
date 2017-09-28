@@ -2,9 +2,10 @@ var mongoose = require('../config/index').db;
 var Schema = mongoose.Schema;
 
 module.exports = mongoose.model('User', new Schema({
-    email: String,
+    email: {type: String, unique: true},
     password: String,
     fullname: String,
     birthdate: Date,
-    role: String
+    role: String,
+    tests: [String]
 }));
