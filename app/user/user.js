@@ -56,6 +56,12 @@ var login = (req, res) => {
     
                 res.json({
                     errors: errors,
+                    userInfo: {
+                        email: user.email,
+                        fullname: user.fullname,
+                        birthdate: user.birthdate,
+                        role: user.role
+                    },
                     token: token
                 });
             }
@@ -134,6 +140,12 @@ var insertUser = (req, res) => {
     
                 res.json({
                     errors: errors,
+                    userInfo: {
+                        email: user.email,
+                        fullname: user.fullname,
+                        birthdate: user.birthdate,
+                        role: user.role
+                    },
                     token: token
                 });
             }
