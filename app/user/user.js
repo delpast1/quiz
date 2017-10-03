@@ -4,6 +4,7 @@ var User = require('../models/index').user;
 var jwt = require('jsonwebtoken');
 const key = require('../config/index').key;
 
+//
 var login = (req, res) => {
     var email = req.body.email,
         password = req.body.password;
@@ -72,6 +73,7 @@ var login = (req, res) => {
     workflow.emit('validateParams');
 };
 
+//
 var insertUser = (req, res) => {
     var email = req.body.email,
         password = req.body.password,
@@ -155,6 +157,7 @@ var insertUser = (req, res) => {
     workflow.emit('validateParams');
 }
 
+//
 var updateUserInfo = (req, res) => {
     var fullname = req.body.fullname,
     birthdate = req.body.birthdate,
@@ -212,6 +215,7 @@ var updateUserInfo = (req, res) => {
     workflow.emit('validateParams');
 }
 
+//
 var updatePassword = (req, res) => {
     var password = req.body.currentPassword,
         newPassword = req.body.newPassword,
@@ -277,9 +281,72 @@ var updatePassword = (req, res) => {
     workflow.emit('validateParams');
 }
 
+//
+var getUser = (req,res) => {
+    var id = req.decoded.id;
+    User.findById(id, (err, user) => {
+        if (err) {
+            res.json({
+                errors: err
+            });
+        } else {
+            res.json({
+                email: user.email,
+                fullname: user.fullname,
+                birthdate: user.birthdate,
+                role: user.role,
+                tests: user.tests
+            });
+        }
+    });
+}
+
+var teacherGetStudentInfo = (req,res) => {
+    var studentId = req.body.studentId;
+
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+    workflow.on('validateParams', ()=> {
+        if (!studentId){
+            errors.push('Student ID required');
+        };
+        
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('getStudent');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('getStudent', () => {
+        User.findById(studentId, (err, user) => {
+            if (err) {
+                res.json({
+                    errors: err
+                });
+            } else if (user.role !== 'student') {
+                errors.push('This is not a student, you don\'t have permision.');
+                workflow.emit('errors', errors);
+            } else {
+                res.json(user);
+            }
+        });
+    });
+    workflow.emit('validateParams');
+}
+
+
 exports = module.exports = {
     insertUser: insertUser,
     updateUserInfo: updateUserInfo,
     updatePassword: updatePassword,
-    login: login
+    login: login,
+    getUser: getUser,
+    teacherGetStudentInfo: teacherGetStudentInfo
 }
