@@ -36,6 +36,8 @@ router.post('/teacher/get-student-info', [authenticate.requireTeacher, user.teac
 
 // Test
 router.post('/get-test', test.getTest);
+router.get('/get-tests', test.getTests);
+router.post('/get-tests-by-teacherId', test.getTestsByTeacherId);
 router.post('/teacher/new-test', [authenticate.requireTeacher, test.insertTest]);
 router.get('/teacher/get-my-tests', [authenticate.requireTeacher, test.getTestList]);
 router.post('/student/load-test', [authenticate.requireStudent, test.loadTest]);

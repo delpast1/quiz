@@ -101,6 +101,58 @@ var getTest = (req, res) => {
     workflow.emit('validateParams');
 }
 
+//
+var getTests = (req, res) => {
+    Test.find({}, (err, tests) => {
+        if (err) {
+            res.json({
+                errors: err
+            });
+        } else {
+            res.json(tests);
+        }
+    })
+}
+
+//
+var getTestsByTeacherId = (req, res) => {
+    var teacherId = req.body.teacherId;
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+    workflow.on('validateParams', ()=> {
+        if (!teacherId){
+            errors.push('Test ID required');
+        };
+        
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('getTests');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('getTests', () => {
+        Test.find({teacherId: teacherId}, (err, tests) => {
+            if (err) {
+                res.json({
+                    errors: err
+                });
+            } else {
+                res.json(tests);
+            }
+        });
+    });
+
+    workflow.emit('validateParams');
+}
+
+//
 var loadTest = (req, res) => {
     var testId = req.body.testId,
         studentId = req.decoded.id;
@@ -186,5 +238,7 @@ exports = module.exports = {
     insertTest: insertTest,
     getTestList: getTestList,
     getTest: getTest,
-    loadTest: loadTest
+    getTests:getTests,
+    loadTest: loadTest,
+    getTestsByTeacherId: getTestsByTeacherId
 }
