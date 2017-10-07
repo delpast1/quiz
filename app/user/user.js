@@ -341,6 +341,16 @@ var teacherGetStudentInfo = (req,res) => {
     workflow.emit('validateParams');
 }
 
+// var getNewNotices = (req,res) => {
+//     var id = req.decoded.id;
+//     User.findById(id, (err, user) => {
+//         if (err) {
+//             res.json(err);
+//         }
+//         res.json();
+//     })
+// }
+
 
 exports = module.exports = {
     insertUser: insertUser,

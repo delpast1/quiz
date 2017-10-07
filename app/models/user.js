@@ -7,5 +7,10 @@ module.exports = mongoose.model('User', new Schema({
     password: String,
     fullname: String,
     birthdate: Date,
-    role: String
+    role: String,
+    notices: [{
+        testId: String,
+        studentId: String,
+        seen: Number
+    }]
 }));

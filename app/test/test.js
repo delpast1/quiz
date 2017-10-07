@@ -1,14 +1,31 @@
 'use strict';
 var Test = require('../models/index').test;
-var Result = require('../models/index').result;
+var User = require('../models/index').user;
 var jwt = require('jsonwebtoken');
+var fs = require('fs');
+var path = require('path');
 const key = require('../config/index').key;
 
+const maxSize = 1*1024*1024; // 1 MB
+var multer = require('multer');
+var storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null,'./upload');
+    },
+    filename: (req, file, cb) => {
+        cb(null,file.originalname);
+    }
+});
+var upload = multer({
+    storage: storage,
+    limits: {fileSize: maxSize}
+}).single('answer');
+
+//Thêm test mới
 var insertTest = (req, res) => {
     var name = req.body.name,
-        content = req.body.content,
-        teacherId = req.decoded.id,
-        role = req.decoded.role;
+        contents = req.body.contents,
+        teacherId = req.decoded.id;
 
     var errors = [];
     var workflow = new (require('events').EventEmitter)();
@@ -17,8 +34,8 @@ var insertTest = (req, res) => {
         if (!name){
             errors.push('Name of test required');
         };
-        if (content.length === 0){
-            errors.push('Content of test required');
+        if (contents.length === 0){
+            errors.push('Contents of test required');
         };
         
         if (errors.length){
@@ -38,7 +55,7 @@ var insertTest = (req, res) => {
     
         var test = new Test({
             name: name,
-            content: content,
+            contents: contents,
             teacherId: teacherId
        });
     
@@ -82,18 +99,13 @@ var getTest = (req, res) => {
     });
 
     workflow.on('getTest', () => {
-        Test.findById(testId, (err, test) => {
+        Test.findById(testId, 'name content teacherId', (err, test) => {
             if (err) {
                 res.json({
                     errors: err
                 });
             } else {
-                res.json({
-                    id: testId,
-                    name: test.name,
-                    teacherId: test.teacherId,
-                    content: test.content
-                });
+                res.json(test);
             }
         });
     });
@@ -103,7 +115,7 @@ var getTest = (req, res) => {
 
 //
 var getTests = (req, res) => {
-    Test.find({}, (err, tests) => {
+    Test.find({}, 'name content teacherId', (err, tests) => {
         if (err) {
             res.json({
                 errors: err
@@ -114,20 +126,135 @@ var getTests = (req, res) => {
     })
 }
 
-//
-var getTestsByTeacherId = (req, res) => {
-    var teacherId = req.body.teacherId;
-    var workflow = new (require('events').EventEmitter)();
+// Giáo viên lấy những test của mình tạo, học sinh lấy những test của mình làm
+var getMyTests = (req, res) => {
+    var id = req.decoded.id,
+        role = req.decoded.role;
+    if (role === 'teacher') {
+        Test.find({teacherId: id}, 'name contents', (err, tests) => {
+            if (err) {
+                res.json({
+                    errors: err
+                }); 
+            } else {
+                res.json(tests);
+            }
+        });
+    } else {
+        Test.find({'results.studentId': id}, {'results.$': 1}, (err, tests) => {
+            if (err) {
+                res.json({
+                    errors: err
+                }); 
+            } else {
+                res.json(tests);
+            }
+        });
+    }
+    
+}
+
+//Học sinh tham gia vào làm test nào đó
+var joinTest = (req, res) => {
+    var testId = req.body.testId,
+        studentId = req.decoded.id;
+
+        var errors = [];
+        var workflow = new (require('events').EventEmitter)();
+    
+        workflow.on('validateParams', ()=> {
+            if (!testId){
+                errors.push('Test ID required');
+            };
+            
+            if (errors.length){
+                workflow.emit('errors', errors);
+            } else {
+                workflow.emit('checkStatus');
+            };
+        });
+    
+        workflow.on('errors', (errors)=> {
+            res.json({ 
+                errors: errors
+            });
+        });
+
+        workflow.on('checkStatus', () => {  
+            Test.findById(testId, (err, test) => {
+                if (err) {
+                    res.json({ 
+                        errors: err
+                   });
+                }
+                if (test.results.length === 0) {
+                    test.results.push({
+                        studentId: studentId,
+                        answers: [],
+                        status: 0
+                    });
+                    test.save((err) => {
+                        if (err) {
+                            res.json({ 
+                                errors: err
+                           });
+                        }
+                        res.json({
+                            errors: errors
+                        });
+                    });
+                } else {
+                    var joined = false;
+                    for (var i = 0; i< test.results.length; i++) {
+                        if (test.results[i].studentId === studentId) {
+                            joined = true;
+                            break;
+                        }
+                    }
+                    if (!joined) {
+                        test.results.push({
+                            studentId: studentId,
+                            answers: [],
+                            status: 0
+                        });
+                        test.save((err) => {
+                            if (err) {
+                                res.json({ 
+                                    errors: err
+                               });
+                            }
+                            res.json({
+                                errors: errors
+                            });
+                        });
+                    } else {
+                        errors.push('You\'ve joint this test already.')
+                        workflow.emit('errors', errors);
+                    }
+                }
+            });
+        });
+
+        workflow.emit('validateParams');
+}
+
+// Học sinh load test và kết quả làm bài của mình về
+var loadTest = (req, res) => {
+    var testId = req.body.testId,
+    studentId = req.decoded.id;
+
     var errors = [];
+    var workflow = new (require('events').EventEmitter)();
+
     workflow.on('validateParams', ()=> {
-        if (!teacherId){
+        if (!testId){
             errors.push('Test ID required');
         };
         
         if (errors.length){
             workflow.emit('errors', errors);
         } else {
-            workflow.emit('getTests');
+            workflow.emit('loadTest');
         };
     });
 
@@ -137,14 +264,25 @@ var getTestsByTeacherId = (req, res) => {
         });
     });
 
-    workflow.on('getTests', () => {
-        Test.find({teacherId: teacherId}, (err, tests) => {
+    workflow.on('loadTest', () => {
+        Test.findById(testId, (err, test) => {
             if (err) {
-                res.json({
-                    errors: err
-                });
-            } else {
-                res.json(tests);
+                res.json(err);
+            }
+            if (!test) {
+                errors.push('This test is not available.');
+                workflow.emit('errors', errors);
+            }
+            for (var i=0; i< test.results.length; i++) {
+                if (test.results[i].studentId === studentId){
+                    res.json({
+                        testId: test._id,
+                        name: test.name,
+                        contents: test.contents,
+                        teacherId: test.teacherId,
+                        result: test.results[i]
+                    }); 
+                }
             }
         });
     });
@@ -152,93 +290,172 @@ var getTestsByTeacherId = (req, res) => {
     workflow.emit('validateParams');
 }
 
-//
-var loadTest = (req, res) => {
-    var testId = req.body.testId,
-        studentId = req.decoded.id;
-    
+// Lưu câu trả lời
+var saveAnswer = (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            return res.json({
+                errors: 'Error uploading file.'
+            });
+        }
+        
+        var testId = req.body.testId,
+            questionId = req.body.questionId,
+            studentId = req.decoded.id;
+
         var errors = [];
         var workflow = new (require('events').EventEmitter)();
-        
         workflow.on('validateParams', ()=> {
             if (!testId){
                 errors.push('Test ID required');
+            };
+            if (!questionId){
+                errors.push('QuestionId required');
             };
             
             if (errors.length){
                 workflow.emit('errors', errors);
             } else {
-                workflow.emit('checkResultStatus');
+                workflow.emit('addAnswer');
             };
         });
 
         workflow.on('errors', (errors)=> {
+            fs.unlink('./upload/'+req.file.originalname, (err) => {
+                if (err) {
+                    res.json(err);
+                }
+            });
             res.json({ 
                 errors: errors
             });
         });
 
-        workflow.on('checkResultStatus', () => {
-            Result.find({testId: testId, studentId: studentId}, (err, result) => {
-                if (err) {
-                    res.json({
-                        errors: err
-                    });
-                }
-                if (result.length === 0 ){
-                    errors.push('You\' not joint this test');
-                    workflow.emit('errors', errors);
-                } else if (result[0].status !== 0){
-                    errors.push('You\'ve finished this test already.');
-                    workflow.emit('errors', errors);
-                } else {
-                    var length = result[0].answers.length;
-                    if (length === 0) {
-                        var index = -1;
-                        workflow.emit('getTest', index);
-                    } else {
-                        var index = result[0].answers[length-1].index
-                        workflow.emit('getTest', index);
-                    }
-                }
-            });
-        });
-
-        workflow.on('getTest', (index) => {
+        workflow.on('addAnswer', () => {
             Test.findById(testId, (err, test) => {
                 if (err) {
                     res.json({
                         errors: err
                     });
                 }
+                for(var i=0; i < test.results.length; i++) {
+                    if (test.results[i].studentId === studentId && test.results[i].status === 0) {
+                        for(var j=0; j< test.results[i].answers.length; j++){
+                            if (test.results[i].answers[j].questionId === questionId) {
+                                errors.push('This question had an answer already.');
+                                workflow.emit('errors', errors);
+                                break;
+                            }
+                        }
+                        test.results[i].answers.push({
+                            questionId: questionId,
+                            fileName: req.file.originalname
+                        });
+                        if (test.results[i].answers.length === test.contents.length) {
+                            test.results[i].status = 1;
+                            notices(test.teacherId, studentId, testId);
+                        }
+                        test.save((err) => {
+                            if (err) {
+                                res.json({
+                                    errors: err
+                                });
+                            }
+                        });
+                    } else {
+                        errors.push('You\'ve finished this test already.');
+                        res.json({
+                            errors: errors
+                        });
+                    }
+                }
                 res.json({
-                    index: index,
-                    test: test
-                })
+                    errors: errors
+                });
             });
         });
+
+        workflow.emit('validateParams');
+    }); 
+}
+
+// Giáo viên load kết quả làm bài về xem
+var loadResult = (req, res) => {
+    var testId = req.body.testId,
+        studentId = req.body.studentId,
+        teacherId = req.decoded.id;
+
+    var errors = [];
+    var workflow = new (require('events').EventEmitter)();
+    workflow.on('validateParams', ()=> {
+        if (!testId){
+            errors.push('Test ID required');
+        };
+        if (!studentId){
+            errors.push('StudentId required');
+        };
+            
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('loadResult');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('loadResult', () => {
+        Test.findOne({'_id': testId, 'teacherId': teacherId,'results.studentId': studentId}, (err, test) => {
+            if (err) {
+                res.json(err);
+            }
+            res.json(test);
+        }); 
+    });
     
     workflow.emit('validateParams');
 }
-//
-var getTestList = (req, res) => {
-    var teacherId = req.decoded.id;
-    Test.find({teacherId: teacherId}, (err, tests) => {
+
+//Tải về câu trả lời
+var getAnswer = (req, res) => {
+    var fileName = req.body.fileName;
+    var url = './upload/' + fileName;
+    res.download(url, fileName, (err) => {
         if (err) {
-            res.json({
-                errors: err
-            }); 
-        } else {
-            res.json(tests);
+            res.json(err);
         }
     });
 }
 
+// Gửi thông báo cho giáo viên
+var notices = (teacherId, studentId, testId ) => {
+    User.findById(teacherId, (err, teacher) => {
+        if (err) throw err;
+        teacher.notices.push({
+            testId: testId,
+            studentId: studentId,
+            seen: 0
+        });
+        teacher.save((err) => {
+            if (err) throw err;
+        });
+    });
+}
+
+
+
 exports = module.exports = {
     insertTest: insertTest,
-    getTestList: getTestList,
     getTest: getTest,
     getTests:getTests,
+    getMyTests: getMyTests,
+    joinTest: joinTest,
     loadTest: loadTest,
-    getTestsByTeacherId: getTestsByTeacherId
+    saveAnswer: saveAnswer,
+    loadResult: loadResult,
+    getAnswer: getAnswer
 }

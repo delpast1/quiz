@@ -4,6 +4,17 @@ var Schema = mongoose.Schema;
 
 module.exports = mongoose.model('Test', new Schema({
     name: String,
-    content: [String],
-    teacherId: String
+    contents: [{
+        question: String
+    }],
+    teacherId: String,
+    results: [{
+        studentId: {type: String, unique: true},
+        answers: [{
+            questionId: String,
+            fileName: String,
+            score: Number
+        }],
+        status: Number
+    }]
 }));
