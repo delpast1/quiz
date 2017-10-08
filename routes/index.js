@@ -48,6 +48,7 @@ router.post('/student/join-test', [authenticate.requireStudent, test.joinTest]);
 router.post('/teacher/load-result', [authenticate.requireTeacher, test.loadResult]);
 router.post('/get-answer', [authenticate.requireSession, test.getAnswer]);
 router.post('/student/save-answer', [authenticate.requireStudent, test.saveAnswer]);
+router.post('/teacher/give-score', [authenticate.requireTeacher, test.giveScore]);
 
 
 

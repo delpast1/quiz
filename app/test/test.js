@@ -491,7 +491,7 @@ var giveScore = (req, res) => {
         studentId = req.body.studentId,
         questionId = req.body.questionId,
         score = req.body.score,
-        teacherId = req.decoded.teacherId;
+        teacherId = req.decoded.id;
 
 
     var errors = [];
@@ -513,7 +513,7 @@ var giveScore = (req, res) => {
         if (errors.length){
             workflow.emit('errors', errors);
         } else {
-            workflow.emit('loadResult');
+            workflow.emit('giveScore');
         };
     });
     
@@ -522,6 +522,40 @@ var giveScore = (req, res) => {
             errors: errors
         });
     });
+
+    workflow.on('giveScore', () => {
+        Test.findOne({'_id': testId, 'teacherId': teacherId}, (err, test) => {
+            if (err) {
+                return res.json(err);
+            }
+            if (test) {
+                for(var i=0; i<test.results.length; i++) {
+                    if (test.results[i].studentId === studentId) {
+                        for(var j=0; j< test.results[i].answers.length; j++){
+                            if (test.results[i].answers[j].questionId === questionId) {
+                                test.results[i].answers[j].score = score;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                test.save((err) => {
+                    if (err) {
+                        return res.json(err);
+                    }
+                    res.json({
+                        errors: errors
+                    })
+                });
+            } else {
+                errors.push('This is not your test.');
+                workflow.emit('errors', errors);
+            }
+        });
+    });
+
+    workflow.emit('validateParams');
 }
 
 exports = module.exports = {
@@ -533,5 +567,6 @@ exports = module.exports = {
     loadTest: loadTest,
     saveAnswer: saveAnswer,
     loadResult: loadResult,
-    getAnswer: getAnswer
+    getAnswer: getAnswer,
+    giveScore: giveScore
 }
