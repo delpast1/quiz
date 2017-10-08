@@ -336,13 +336,15 @@ var getUserByToken = (req, res) => {
             errors.push('This user is not available.');
             return workflow.emit('errors', errors);
         } 
-        res.json({
-            email: user.email,
-            fullname: user.fullname,
-            birthdate: user.birthdate,
-            role: user.role,
-            tests: user.tests
-        });
+        if (user) {
+            res.json({
+                email: user.email,
+                fullname: user.fullname,
+                birthdate: user.birthdate,
+                role: user.role,
+                tests: user.tests
+            });
+        }
     });
 }
 
@@ -463,7 +465,7 @@ var getNotice = (req, res) => {
     workflow.on('getNotice', () => {
         User.findById(id, (err, user) => {
             if (err) {
-                res.json(err);
+                return res.json(err);
             }
             if (user.notices.length !== 0 ) {
                 for(var i=0; i < user.notices.length; i++) {
@@ -474,7 +476,9 @@ var getNotice = (req, res) => {
                     }
                 }
                 user.save((err) => {
-                    res.json(err);
+                    if (err) {
+                        return res.json(err);
+                    }
                 });
                 workflow.emit('loadResult');
             } else {
@@ -494,19 +498,19 @@ var getNotice = (req, res) => {
             //     errors.push('This test is not available.');
             //     workflow.emit('errors', errors);
             // } else {
-            //     var result = {};
-            //     for (var i=0; i< test.results.length; i++) {
-            //         if (test.results[i].studentId === studentId) {
-            //             result = test.results[i];
-            //             break;
-            //         }
-            //     }
-            //     res.json({
-            //         testId: test._id,
-            //         name: test.name,
-            //         teacherId: test.teacherId,
-            //         result: result
-            //     });
+                var result = {};
+                for (var i=0; i< test.results.length; i++) {
+                    if (test.results[i].studentId === studentId) {
+                        result = test.results[i];
+                        break;
+                    }
+                }
+                res.json({
+                    testId: test._id,
+                    name: test.name,
+                    teacherId: test.teacherId,
+                    result: result
+                });
             // }
         }); 
     });
