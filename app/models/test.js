@@ -9,7 +9,7 @@ module.exports = mongoose.model('Test', new Schema({
     }],
     teacherId: String,
     results: [{
-        studentId: {type: String, unique: true},
+        studentId: {type: String, sparse: true},
         answers: [{
             questionId: String,
             fileName: String,

@@ -99,7 +99,7 @@ var getTest = (req, res) => {
     });
 
     workflow.on('getTest', () => {
-        Test.findById(testId, 'name content teacherId', (err, test) => {
+        Test.findById(testId, 'name contents teacherId', (err, test) => {
             if (err) {
                 res.json({
                     errors: err
@@ -198,10 +198,11 @@ var joinTest = (req, res) => {
                             res.json({ 
                                 errors: err
                            });
+                        } else {
+                            res.json({
+                                errors: errors
+                            });
                         }
-                        res.json({
-                            errors: errors
-                        });
                     });
                 } else {
                     var joined = false;
@@ -222,10 +223,11 @@ var joinTest = (req, res) => {
                                 res.json({ 
                                     errors: err
                                });
+                            } else {
+                                res.json({
+                                    errors: errors
+                                });
                             }
-                            res.json({
-                                errors: errors
-                            });
                         });
                     } else {
                         errors.push('You\'ve joint this test already.')
@@ -271,6 +273,9 @@ var loadTest = (req, res) => {
             }
             if (!test) {
                 errors.push('This test is not available.');
+                workflow.emit('errors', errors);
+            } else if (test.results.length === 0) {
+                errors.push('You\'ve not joint this test.');
                 workflow.emit('errors', errors);
             }
             for (var i=0; i< test.results.length; i++) {
@@ -339,39 +344,46 @@ var saveAnswer = (req, res) => {
                     });
                 }
                 for(var i=0; i < test.results.length; i++) {
+                    var check = false;
                     if (test.results[i].studentId === studentId && test.results[i].status === 0) {
                         for(var j=0; j< test.results[i].answers.length; j++){
                             if (test.results[i].answers[j].questionId === questionId) {
-                                errors.push('This question had an answer already.');
-                                workflow.emit('errors', errors);
+                                check = true;
                                 break;
                             }
                         }
-                        test.results[i].answers.push({
-                            questionId: questionId,
-                            fileName: req.file.originalname
-                        });
-                        if (test.results[i].answers.length === test.contents.length) {
-                            test.results[i].status = 1;
-                            notices(test.teacherId, studentId, testId);
-                        }
-                        test.save((err) => {
-                            if (err) {
-                                res.json({
-                                    errors: err
-                                });
+                        if (!check) {
+                            test.results[i].answers.push({
+                                questionId: questionId,
+                                fileName: req.file.originalname
+                            });
+                            if (test.results[i].answers.length === test.contents.length) {
+                                test.results[i].status = 1;
+                                notices(test.teacherId, studentId, testId);
                             }
-                        });
+                            test.save((err) => {
+                                if (err) {
+                                    res.json({
+                                        errors: err
+                                    });
+                                }
+                                res.json({
+                                    errors: errors
+                                });
+                            });
+                        } else {
+                            errors.push('You\'ve answered this question already.');
+                            res.json({
+                                 errors: errors
+                            });
+                        }
                     } else {
                         errors.push('You\'ve finished this test already.');
                         res.json({
-                            errors: errors
+                             errors: errors
                         });
                     }
                 }
-                res.json({
-                    errors: errors
-                });
             });
         });
 
@@ -409,11 +421,29 @@ var loadResult = (req, res) => {
     });
 
     workflow.on('loadResult', () => {
-        Test.findOne({'_id': testId, 'teacherId': teacherId,'results.studentId': studentId}, (err, test) => {
+        Test.findOne({'_id': testId, 'teacherId': teacherId}, (err, test) => {
             if (err) {
                 res.json(err);
             }
-            res.json(test);
+            
+            if (!test) {
+                errors.push('This test is not available.');
+                workflow.emit('errors', errors);
+            } else {
+                var result = {};
+                for (var i=0; i< test.results.length; i++) {
+                    if (test.results[i].studentId === studentId) {
+                        result = test.results[i];
+                        break;
+                    }
+                }
+                res.json({
+                    testId: test._id,
+                    name: test.name,
+                    teacherId: test.teacherId,
+                    result: result
+                });
+            }
         }); 
     });
     
@@ -434,15 +464,19 @@ var getAnswer = (req, res) => {
 // Gửi thông báo cho giáo viên
 var notices = (teacherId, studentId, testId ) => {
     User.findById(teacherId, (err, teacher) => {
+        console.log(teacher);
         if (err) throw err;
-        teacher.notices.push({
-            testId: testId,
-            studentId: studentId,
-            seen: 0
-        });
-        teacher.save((err) => {
-            if (err) throw err;
-        });
+        if (teacher) {
+            teacher.notices.push({
+                testId: testId,
+                studentId: studentId,
+                seen: 0
+            });
+            teacher.save((err) => {
+                if (err) throw err;
+            });
+        }
+        return;
     });
 }
 

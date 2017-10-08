@@ -301,6 +301,7 @@ var getUser = (req,res) => {
     });
 }
 
+//
 var teacherGetStudentInfo = (req,res) => {
     var studentId = req.body.studentId;
 
@@ -341,15 +342,99 @@ var teacherGetStudentInfo = (req,res) => {
     workflow.emit('validateParams');
 }
 
-// var getNewNotices = (req,res) => {
-//     var id = req.decoded.id;
-//     User.findById(id, (err, user) => {
-//         if (err) {
-//             res.json(err);
-//         }
-//         res.json();
-//     })
-// }
+//
+var getUnseenNotices = (req,res) => {
+    var id = req.decoded.id;
+    User.findById(id, (err, user) => {
+        if (err) {
+            res.json(err);
+        }
+        
+        var unseenNotices = [];
+        if (user.notices.length !== 0){
+            for(var i=0; i< user.notices.length; i++) {
+                if (user.notices[i].seen === 0) {
+                    unseenNotices.push(user.notices[i]);
+                }
+            }
+            res.json(unseenNotices);
+        } else {
+            res.json(unseenNotices);
+        }
+    }); 
+}
+
+// 
+var getSeenNotices = (req,res) => {
+    var id = req.decoded.id;
+    User.findById(id, (err, user) => {
+        if (err) {
+            res.json(err);
+        }
+        
+        var seenNotices = [];
+        if (user.notices.length !== 0){
+            for(var i=0; i< user.notices.length; i++) {
+                if (user.notices[i].seen !== 0) {
+                    unseenNotices.push(user.notices[i]);
+                }
+            }
+            res.json(seenNotices);
+        } else {
+            res.json(seenNotices);
+        }
+    }); 
+}
+
+//
+var getNotice = (req, res) => {
+    var id = req.decoded.id,
+        noticeId = req.body.noticeId;
+
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+    workflow.on('validateParams', ()=> {
+        if (!noticeId){
+            errors.push('noticeId required');
+        };
+        
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('getNotice');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('getNotice', () => {
+        User.findById(id, (err, user) => {
+            if (err) {
+                res.json(err);
+            }
+            if (user.notices.length !== 0 ) {
+                var notice = {};
+                for(var i=0; i < user.notices.length; i++) {
+                    if (user.notices[i]._id.$oid === noticeId) {
+                        user.notices[i].seen = 1;
+                        notice = user.notices[i];
+                        console.log(notice);
+                        break;
+                    }
+                }
+            } else {
+                errors.push('Wrong person.');
+                workflow.emit('errors', errors);
+            }
+        });
+    });
+
+    workflow.emit('validateParams');
+}
 
 
 exports = module.exports = {
@@ -358,5 +443,8 @@ exports = module.exports = {
     updatePassword: updatePassword,
     login: login,
     getUser: getUser,
-    teacherGetStudentInfo: teacherGetStudentInfo
+    teacherGetStudentInfo: teacherGetStudentInfo,
+    getUnseenNotices: getUnseenNotices,
+    getSeenNotices: getSeenNotices,
+    getNotice: getNotice
 }

@@ -32,22 +32,22 @@ router.post('/update-information', [authenticate.requireSession, user.updateUser
 router.post('/change-password', [authenticate.requireSession, user.updatePassword]);
 router.get('/user-info', [authenticate.requireSession, user.getUser]);
 router.post('/teacher/get-student-info', [authenticate.requireTeacher, user.teacherGetStudentInfo]);
+router.get('/get-unseen-notices', [authenticate.requireSession, user.getUnseenNotices]);
+router.get('/get-seen-notices', [authenticate.requireSession, user.getSeenNotices]);
+router.post('/get-notice', [authenticate.requireSession, user.getNotice]);
 
 // Test
 router.post('/get-test', test.getTest);
 router.get('/get-tests', test.getTests);
 // router.post('/get-tests-by-teacherId', test.getTestsByTeacherId);
 router.post('/teacher/new-test', [authenticate.requireTeacher, test.insertTest]);
-router.get('/get-my-tests', [authenticate.requireSession, test.getMyTests]);
+router.get('/teacher/get-my-tests', [authenticate.requireTeacher, test.getMyTests]);
 router.post('/student/load-test', [authenticate.requireStudent, test.loadTest]);
 router.post('/student/join-test', [authenticate.requireStudent, test.joinTest]);
 router.post('/teacher/load-result', [authenticate.requireTeacher, test.loadResult]);
 router.post('/get-answer', [authenticate.requireSession, test.getAnswer]);
-
-//Result
-
 router.post('/student/save-answer', [authenticate.requireStudent, test.saveAnswer]);
-// router.post('/teacher/get-result', [authenticate.requireTeacher, result.getResult]);
+
 
 
 module.exports = router;
