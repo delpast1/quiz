@@ -430,7 +430,7 @@ var getSeenNotices = (req,res) => {
         if (user.notices.length !== 0){
             for(var i=0; i< user.notices.length; i++) {
                 if (user.notices[i].seen !== 0) {
-                    unseenNotices.push(user.notices[i]);
+                    seenNotices.push(user.notices[i]);
                 }
             }
             res.json(seenNotices);
@@ -476,13 +476,11 @@ var getNotice = (req, res) => {
             }
             if (user.notices.length !== 0 ) {
                 for(var i=0; i < user.notices.length; i++) {
-                    if (user.notices[i].testId === testId && user.notices[i].testId === studentId) {
+                    if (user.notices[i].testId === testId && user.notices[i].studentId === studentId) {
                         user.notices[i].seen = 1;
-                        console.log(user.notices[i]);
                         break;
                     }
                 }
-                console.log(user);
                 user.save((err) => {
                     if (err) {
                         return res.json(err);
@@ -502,10 +500,6 @@ var getNotice = (req, res) => {
                 return res.json(err);
             }
             
-            // if (!test) {
-            //     errors.push('This test is not available.');
-            //     workflow.emit('errors', errors);
-            // } else {
                 var result = {};
                 for (var i=0; i< test.results.length; i++) {
                     if (test.results[i].studentId === studentId) {
@@ -519,7 +513,6 @@ var getNotice = (req, res) => {
                     teacherId: test.teacherId,
                     result: result
                 });
-            // }
         }); 
     });
 

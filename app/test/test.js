@@ -231,8 +231,9 @@ var joinTest = (req, res) => {
                                 }
                             });
                         } else {
-                            errors.push('You\'ve joint this test already.')
-                            workflow.emit('errors', errors);
+                            res.json({
+                                joint: 1
+                            }); 
                         }
                     }
                 } else {
@@ -455,6 +456,7 @@ var loadResult = (req, res) => {
     workflow.emit('validateParams');
 }
 
+
 //Tải về câu trả lời
 var getAnswer = (req, res) => {
     var fileName = req.body.fileName;
@@ -483,7 +485,44 @@ var notices = (teacherId, studentId, testId ) => {
     });
 }
 
+//
+var giveScore = (req, res) => {
+    var testId = req.body.testId,
+        studentId = req.body.studentId,
+        questionId = req.body.questionId,
+        score = req.body.score,
+        teacherId = req.decoded.teacherId;
 
+
+    var errors = [];
+    var workflow = new (require('events').EventEmitter)();
+    workflow.on('validateParams', ()=> {
+        if (!testId){
+            errors.push('Test ID required');
+        };
+        if (!studentId){
+            errors.push('StudentId required');
+        };
+        if (!questionId){
+            errors.push('questionId required');
+        };
+        if (!score){
+            errors.push('score required');
+        };
+        
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('loadResult');
+        };
+    });
+    
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+}
 
 exports = module.exports = {
     insertTest: insertTest,
