@@ -1,6 +1,7 @@
 'use strict';
 
 var User = require('../models/index').user;
+var Test = require('../models/index').test;
 var jwt = require('jsonwebtoken');
 const key = require('../config/index').key;
 
@@ -389,7 +390,8 @@ var getSeenNotices = (req,res) => {
 //
 var getNotice = (req, res) => {
     var id = req.decoded.id,
-        noticeId = req.body.noticeId;
+        studentId = req.body.studentId,
+        testId = req.body.testId;
 
     var workflow = new (require('events').EventEmitter)();
     var errors = [];

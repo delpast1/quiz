@@ -187,32 +187,8 @@ var joinTest = (req, res) => {
                         errors: err
                    });
                 }
-                if (test.results.length === 0) {
-                    test.results.push({
-                        studentId: studentId,
-                        answers: [],
-                        status: 0
-                    });
-                    test.save((err) => {
-                        if (err) {
-                            res.json({ 
-                                errors: err
-                           });
-                        } else {
-                            res.json({
-                                errors: errors
-                            });
-                        }
-                    });
-                } else {
-                    var joined = false;
-                    for (var i = 0; i< test.results.length; i++) {
-                        if (test.results[i].studentId === studentId) {
-                            joined = true;
-                            break;
-                        }
-                    }
-                    if (!joined) {
+                if (test) {
+                    if (test.results.length === 0) {
                         test.results.push({
                             studentId: studentId,
                             answers: [],
@@ -230,9 +206,38 @@ var joinTest = (req, res) => {
                             }
                         });
                     } else {
-                        errors.push('You\'ve joint this test already.')
-                        workflow.emit('errors', errors);
+                        var joined = false;
+                        for (var i = 0; i< test.results.length; i++) {
+                            if (test.results[i].studentId === studentId) {
+                                joined = true;
+                                break;
+                            }
+                        }
+                        if (!joined) {
+                            test.results.push({
+                                studentId: studentId,
+                                answers: [],
+                                status: 0
+                            });
+                            test.save((err) => {
+                                if (err) {
+                                    res.json({ 
+                                        errors: err
+                                   });
+                                } else {
+                                    res.json({
+                                        errors: errors
+                                    });
+                                }
+                            });
+                        } else {
+                            errors.push('You\'ve joint this test already.')
+                            workflow.emit('errors', errors);
+                        }
                     }
+                } else {
+                    errors.push('This test is not available.')
+                    workflow.emit('errors', errors);
                 }
             });
         });
