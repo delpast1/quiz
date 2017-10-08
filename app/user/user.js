@@ -288,7 +288,6 @@ var updatePassword = (req, res) => {
 var getUser = (req,res) => {
     var id = req.body.id;
     var errors = [];
-    var token = '';
     var workflow = new (require('events').EventEmitter)();
 
     workflow.on('validateParams', ()=> {
@@ -326,6 +325,25 @@ var getUser = (req,res) => {
     });
 
     workflow.emit('validateParams');
+}
+
+//
+var getUserByToken = (req, res) => {
+    var id = req.decoded.id;
+
+    User.findById(id, (err, user) => {
+        if (err) {
+            errors.push('This user is not available.');
+            return workflow.emit('errors', errors);
+        } 
+        res.json({
+            email: user.email,
+            fullname: user.fullname,
+            birthdate: user.birthdate,
+            role: user.role,
+            tests: user.tests
+        });
+    });
 }
 
 //
@@ -423,10 +441,10 @@ var getNotice = (req, res) => {
     var errors = [];
     workflow.on('validateParams', ()=> {
         if (!studentId){
-            errors.push('noticeId required');
+            errors.push('studentId required');
         };
         if (!testId){
-            errors.push('noticeId required');
+            errors.push('testId required');
         };
         
         if (errors.length){
@@ -458,7 +476,7 @@ var getNotice = (req, res) => {
                 user.save((err) => {
                     res.json(err);
                 });
-                workflow.on('loadResult');
+                workflow.emit('loadResult');
             } else {
                 errors.push('Wrong person.');
                 workflow.emit('errors', errors);
@@ -469,27 +487,27 @@ var getNotice = (req, res) => {
     workflow.on('loadResult', () => {
         Test.findOne({'_id': testId, 'teacherId': id}, (err, test) => {
             if (err) {
-                res.json(err);
+                return res.json(err);
             }
             
-            if (!test) {
-                errors.push('This test is not available.');
-                workflow.emit('errors', errors);
-            } else {
-                var result = {};
-                for (var i=0; i< test.results.length; i++) {
-                    if (test.results[i].studentId === studentId) {
-                        result = test.results[i];
-                        break;
-                    }
-                }
-                res.json({
-                    testId: test._id,
-                    name: test.name,
-                    teacherId: test.teacherId,
-                    result: result
-                });
-            }
+            // if (!test) {
+            //     errors.push('This test is not available.');
+            //     workflow.emit('errors', errors);
+            // } else {
+            //     var result = {};
+            //     for (var i=0; i< test.results.length; i++) {
+            //         if (test.results[i].studentId === studentId) {
+            //             result = test.results[i];
+            //             break;
+            //         }
+            //     }
+            //     res.json({
+            //         testId: test._id,
+            //         name: test.name,
+            //         teacherId: test.teacherId,
+            //         result: result
+            //     });
+            // }
         }); 
     });
 
@@ -503,6 +521,7 @@ exports = module.exports = {
     updatePassword: updatePassword,
     login: login,
     getUser: getUser,
+    getUserByToken: getUserByToken,
     teacherGetStudentInfo: teacherGetStudentInfo,
     getUnseenNotices: getUnseenNotices,
     getSeenNotices: getSeenNotices,

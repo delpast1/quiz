@@ -32,6 +32,7 @@ router.post('/update-information', [authenticate.requireSession, user.updateUser
 router.post('/change-password', [authenticate.requireSession, user.updatePassword]);
 // router.get('/user-info', [authenticate.requireSession, user.getUser]);
 router.post('/user-info', [user.getUser]);
+router.get('/user-info', [authenticate.requireSession, user.getUserByToken]);
 router.post('/teacher/get-student-info', [authenticate.requireTeacher, user.teacherGetStudentInfo]);
 router.get('/get-unseen-notices', [authenticate.requireSession, user.getUnseenNotices]);
 router.get('/get-seen-notices', [authenticate.requireSession, user.getSeenNotices]);

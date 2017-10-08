@@ -183,7 +183,7 @@ var joinTest = (req, res) => {
         workflow.on('checkStatus', () => {  
             Test.findById(testId, (err, test) => {
                 if (err) {
-                    res.json({ 
+                    return res.json({ 
                         errors: err
                    });
                 }
@@ -274,7 +274,7 @@ var loadTest = (req, res) => {
     workflow.on('loadTest', () => {
         Test.findById(testId, (err, test) => {
             if (err) {
-                res.json(err);
+                return res.json(err);
             }
             if (!test) {
                 errors.push('This test is not available.');
@@ -333,7 +333,7 @@ var saveAnswer = (req, res) => {
         workflow.on('errors', (errors)=> {
             fs.unlink('./upload/'+req.file.originalname, (err) => {
                 if (err) {
-                    res.json(err);
+                    return res.json(err);
                 }
             });
             res.json({ 
@@ -344,7 +344,7 @@ var saveAnswer = (req, res) => {
         workflow.on('addAnswer', () => {
             Test.findById(testId, (err, test) => {
                 if (err) {
-                    res.json({
+                    return res.json({
                         errors: err
                     });
                 }
@@ -368,7 +368,7 @@ var saveAnswer = (req, res) => {
                             }
                             test.save((err) => {
                                 if (err) {
-                                    res.json({
+                                    return res.json({
                                         errors: err
                                     });
                                 }
@@ -428,7 +428,7 @@ var loadResult = (req, res) => {
     workflow.on('loadResult', () => {
         Test.findOne({'_id': testId, 'teacherId': teacherId}, (err, test) => {
             if (err) {
-                res.json(err);
+                return res.json(err);
             }
             
             if (!test) {
@@ -461,7 +461,7 @@ var getAnswer = (req, res) => {
     var url = './upload/' + fileName;
     res.download(url, fileName, (err) => {
         if (err) {
-            res.json(err);
+            return res.json(err);
         }
     });
 }
