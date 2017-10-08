@@ -284,22 +284,52 @@ var updatePassword = (req, res) => {
 
 //
 var getUser = (req,res) => {
-    var id = req.decoded.id;
-    User.findById(id, (err, user) => {
-        if (err) {
-            res.json({
-                errors: err
-            });
+    var id = req.body.id;
+    var errors = [];
+    var token = '';
+    var workflow = new (require('events').EventEmitter)();
+
+    workflow.on('validateParams', ()=> {
+        if (!id){
+            errors.push('id required');
+        };
+        
+        if (errors.length){
+            workflow.emit('errors', errors);
         } else {
-            res.json({
-                email: user.email,
-                fullname: user.fullname,
-                birthdate: user.birthdate,
-                role: user.role,
-                tests: user.tests
-            });
-        }
+            workflow.emit('getUser');
+        };
+    }); 
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
     });
+    
+    workflow.on('getUser', () => {
+        User.findById(id, (err, user) => {
+            if (err) {
+                res.json({
+                    errors: err
+                });
+            } 
+            if (!user) {
+                errors.push('This user is not available.');
+                workflow.emit('errors', errors);
+            } else {
+                res.json({
+                    email: user.email,
+                    fullname: user.fullname,
+                    birthdate: user.birthdate,
+                    role: user.role,
+                    tests: user.tests
+                });
+            }
+        });
+    });
+
+    workflow.emit('validateParams');
 }
 
 //
@@ -396,7 +426,10 @@ var getNotice = (req, res) => {
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
     workflow.on('validateParams', ()=> {
-        if (!noticeId){
+        if (!studentId){
+            errors.push('noticeId required');
+        };
+        if (!testId){
             errors.push('noticeId required');
         };
         
@@ -419,20 +452,49 @@ var getNotice = (req, res) => {
                 res.json(err);
             }
             if (user.notices.length !== 0 ) {
-                var notice = {};
                 for(var i=0; i < user.notices.length; i++) {
-                    if (user.notices[i]._id.$oid === noticeId) {
+                    if (user.notices[i].testId === testId && user.notices[i].testId === studentId) {
                         user.notices[i].seen = 1;
                         notice = user.notices[i];
-                        console.log(notice);
                         break;
                     }
                 }
+                user.save((err) => {
+                    res.json(err);
+                });
+                workflow.on('loadResult');
             } else {
                 errors.push('Wrong person.');
                 workflow.emit('errors', errors);
             }
         });
+    });
+
+    workflow.on('loadResult', () => {
+        Test.findOne({'_id': testId, 'teacherId': id}, (err, test) => {
+            if (err) {
+                res.json(err);
+            }
+            
+            if (!test) {
+                errors.push('This test is not available.');
+                workflow.emit('errors', errors);
+            } else {
+                var result = {};
+                for (var i=0; i< test.results.length; i++) {
+                    if (test.results[i].studentId === studentId) {
+                        result = test.results[i];
+                        break;
+                    }
+                }
+                res.json({
+                    testId: test._id,
+                    name: test.name,
+                    teacherId: test.teacherId,
+                    result: result
+                });
+            }
+        }); 
     });
 
     workflow.emit('validateParams');
