@@ -315,6 +315,7 @@ var getUser = (req,res) => {
                 return workflow.emit('errors', errors);
             } 
             res.json({
+                userId:
                 email: user.email,
                 fullname: user.fullname,
                 birthdate: user.birthdate,
@@ -337,6 +338,7 @@ var getUserByToken = (req, res) => {
         } 
         if (user) {
             res.json({
+                userId: user._id,
                 email: user.email,
                 fullname: user.fullname,
                 birthdate: user.birthdate,
@@ -473,10 +475,11 @@ var getNotice = (req, res) => {
                 for(var i=0; i < user.notices.length; i++) {
                     if (user.notices[i].testId === testId && user.notices[i].testId === studentId) {
                         user.notices[i].seen = 1;
-                        notice = user.notices[i];
+                        console.log(user.notices[i]);
                         break;
                     }
                 }
+                console.log(user);
                 user.save((err) => {
                     if (err) {
                         return res.json(err);
