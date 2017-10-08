@@ -311,17 +311,20 @@ var getUser = (req,res) => {
     workflow.on('getUser', () => {
         User.findById(id, (err, user) => {
             if (err) {
+                return res.json(err);
+            } 
+            if (user) {
+                res.json({
+                    email: user.email,
+                    fullname: user.fullname,
+                    birthdate: user.birthdate,
+                    role: user.role,
+                    tests: user.tests
+                });
+            } else {
                 errors.push('This user is not available.');
                 return workflow.emit('errors', errors);
-            } 
-            res.json({
-                userId:
-                email: user.email,
-                fullname: user.fullname,
-                birthdate: user.birthdate,
-                role: user.role,
-                tests: user.tests
-            });
+            }
         });
     });
 
