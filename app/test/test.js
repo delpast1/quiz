@@ -372,7 +372,7 @@ var saveAnswer = (req, res) => {
                                         errors: err
                                     });
                                 }
-                                res.json({
+                                return res.json({
                                     errors: errors
                                 });
                             });
@@ -384,7 +384,7 @@ var saveAnswer = (req, res) => {
                         }
                     } else {
                         errors.push('You\'ve finished this test already.');
-                        res.json({
+                        return res.json({
                              errors: errors
                         });
                     }
@@ -469,7 +469,6 @@ var getAnswer = (req, res) => {
 // Gửi thông báo cho giáo viên
 var notices = (teacherId, studentId, testId ) => {
     User.findById(teacherId, (err, teacher) => {
-        console.log(teacher);
         if (err) throw err;
         if (teacher) {
             teacher.notices.push({
@@ -481,7 +480,6 @@ var notices = (teacherId, studentId, testId ) => {
                 if (err) throw err;
             });
         }
-        return;
     });
 }
 
