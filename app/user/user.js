@@ -304,7 +304,7 @@ var getUser = (req,res) => {
     }); 
 
     workflow.on('errors', (errors)=> {
-        res.json({ 
+    res.json({ 
             errors: errors
         });
     });
@@ -312,22 +312,16 @@ var getUser = (req,res) => {
     workflow.on('getUser', () => {
         User.findById(id, (err, user) => {
             if (err) {
-                res.json({
-                    errors: err
-                });
-            } 
-            if (!user) {
                 errors.push('This user is not available.');
-                workflow.emit('errors', errors);
-            } else {
-                res.json({
-                    email: user.email,
-                    fullname: user.fullname,
-                    birthdate: user.birthdate,
-                    role: user.role,
-                    tests: user.tests
-                });
-            }
+                return workflow.emit('errors', errors);
+            } 
+            res.json({
+                email: user.email,
+                fullname: user.fullname,
+                birthdate: user.birthdate,
+                role: user.role,
+                tests: user.tests
+            });
         });
     });
 
