@@ -349,8 +349,9 @@ var getUserByToken = (req, res) => {
                 tests: user.tests
             });
         } else {
-            errors.push('This user is not available.');
-            return workflow.emit('errors', errors);
+            res.json({
+                errors: ['This user is not available.']
+            })
         }
     });
 }
