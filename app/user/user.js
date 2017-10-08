@@ -333,8 +333,7 @@ var getUserByToken = (req, res) => {
 
     User.findById(id, (err, user) => {
         if (err) {
-            errors.push('This user is not available.');
-            return workflow.emit('errors', errors);
+            return res.json(err);
         } 
         if (user) {
             res.json({
@@ -344,6 +343,9 @@ var getUserByToken = (req, res) => {
                 role: user.role,
                 tests: user.tests
             });
+        } else {
+            errors.push('This user is not available.');
+            return workflow.emit('errors', errors);
         }
     });
 }
