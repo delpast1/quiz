@@ -59,6 +59,7 @@ var login = (req, res) => {
                 res.json({
                     errors: errors,
                     userInfo: {
+                        userId: user._id,
                         email: user.email,
                         fullname: user.fullname,
                         birthdate: user.birthdate,
@@ -122,6 +123,7 @@ var insertUser = (req, res) => {
         var date =  Date.parse(birthdate)+ 7*60*60*1000;
     
         var user = new User({
+            userId: user._id,
             email: email,
             password: password,
             fullname: fullname,
