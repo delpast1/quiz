@@ -447,6 +447,7 @@ var loadResult = (req, res) => {
                     testId: test._id,
                     name: test.name,
                     teacherId: test.teacherId,
+                    contents: test.contents,
                     result: result
                 });
             }
