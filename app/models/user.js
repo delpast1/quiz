@@ -11,6 +11,7 @@ module.exports = mongoose.model('User', new Schema({
     notices: [{
         testId: String,
         studentId: String,
+        name: String,
         seen: Number
     }]
 }));
