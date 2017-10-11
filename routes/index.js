@@ -42,7 +42,7 @@ router.post('/get-test', test.getTest);
 router.get('/get-tests', test.getTests);
 // router.post('/get-tests-by-teacherId', test.getTestsByTeacherId);
 router.post('/teacher/new-test', [authenticate.requireTeacher, test.insertTest]);
-router.get('/teacher/get-my-tests', [authenticate.requireTeacher, test.getMyTests]);
+router.get('/get-my-tests', [authenticate.requireSession, test.getMyTests]);
 router.post('/student/load-test', [authenticate.requireStudent, test.loadTest]);
 router.post('/student/join-test', [authenticate.requireStudent, test.joinTest]);
 router.post('/teacher/load-result', [authenticate.requireTeacher, test.loadResult]);

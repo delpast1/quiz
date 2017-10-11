@@ -131,7 +131,7 @@ var getMyTests = (req, res) => {
     var id = req.decoded.id,
         role = req.decoded.role;
     if (role === 'teacher') {
-        Test.find({teacherId: id}, 'name contents', (err, tests) => {
+        Test.find({teacherId: id}, 'name contents results', (err, tests) => {
             if (err) {
                 res.json({
                     errors: err
@@ -141,7 +141,7 @@ var getMyTests = (req, res) => {
             }
         });
     } else {
-        Test.find({'results.studentId': id}, {'results.$': 1}, (err, tests) => {
+        Test.find({'results.studentId': id}, 'name contents', (err, tests) => {
             if (err) {
                 res.json({
                     errors: err
@@ -365,7 +365,7 @@ var saveAnswer = (req, res) => {
                             });
                             if (test.results[i].answers.length === test.contents.length) {
                                 test.results[i].status = 1;
-                                notices(test.teacherId, studentId, testId);
+                                notices(test.teacherId, test.name, studentId, testId);
                             }
                             test.save((err) => {
                                 if (err) {
@@ -469,13 +469,14 @@ var getAnswer = (req, res) => {
 }
 
 // Gửi thông báo cho giáo viên
-var notices = (teacherId, studentId, testId ) => {
+var notices = (teacherId, name, studentId, testId ) => {
     User.findById(teacherId, (err, teacher) => {
         if (err) throw err;
         if (teacher) {
             teacher.notices.push({
                 testId: testId,
                 studentId: studentId,
+                name: name,
                 seen: 0
             });
             teacher.save((err) => {

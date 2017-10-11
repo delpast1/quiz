@@ -346,7 +346,8 @@ var getUserByToken = (req, res) => {
                 fullname: user.fullname,
                 birthdate: user.birthdate,
                 role: user.role,
-                tests: user.tests
+                tests: user.tests,
+                notices: user.notices
             });
         } else {
             res.json({
