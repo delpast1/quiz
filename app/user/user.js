@@ -512,6 +512,7 @@ var getNotice = (req, res) => {
                 res.json({
                     testId: test._id,
                     name: test.name,
+                    contents: test.contents,
                     teacherId: test.teacherId,
                     result: result
                 });
